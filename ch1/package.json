@@ -1,0 +1,35 @@
+{
+  "name": "ch1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@langchain/community": "^0.3.37",
+    "@langchain/core": "^0.3.43",
+    "@langchain/google-genai": "^0.2.0",
+    "@langchain/langgraph": "^0.2.62",
+    "@langchain/openai": "^0.5.0",
+    "@langchain/weaviate": "^0.1.1",
+    "body-parser": "^1.20.3",
+    "cheerio": "^1.0.0",
+    "chromadb": "^2.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "langchain": "^0.3.19",
+    "pdf-parse": "^1.1.1",
+    "playwright": "^1.51.1",
+    "uuid": "^11.1.0",
+    "weaviate-client": "^3.4.2",
+    "weaviate-ts-client": "^2.2.0",
+    "zod": "^3.24.2"
+  }
+}
