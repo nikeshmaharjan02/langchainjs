@@ -9,7 +9,10 @@ import { model } from "../model/model.js"
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createRetrievalChain } from "langchain/chains/retrieval";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { encode, decode } from 'gpt-3-encoder';
+import { calculateGoogleCost } from '../utils/costCalculator.js';
+import {logAnalytics} from '../utils/analyticsLogger.js';
+
 
 const TEMP_DIR = path.join(process.cwd(), 'temp'); // Folder to save converted images
 
@@ -47,7 +50,7 @@ export const pdfOCRController = async (req, res) => {
       fs.unlinkSync(imgPath); // Clean temp image after processing
     }
 
-    await storeInDb(combinedText);
+    // await storeInDb(combinedText);
 
     const summary = await summarizeText(combinedText);
 
@@ -77,7 +80,7 @@ export const imageOCRController = async (req,res)=>{
             const result = await tesseract.recognize(imagePath, 'eng');  
             combinedText += result.data.text + '\n\n';
         }
-        await storeInDb(combinedText);
+        // await storeInDb(combinedText);
         const summary = await summarizeText(combinedText);
         res.json({ success:true, extracted: combinedText,  summary : summary });
     } catch (error) {
@@ -116,11 +119,46 @@ export const queryOCRController = async (req,res)=>{
       input: question,
     });
 
+
     if (!response || !response.answer) {
       return res.json({ success: false, answer: '❌ No content available' });
     }
 
-    res.json({ success: true, answer: response.answer });
+     // Extract context from response
+     const contextDocs = response.context ?? []; // assume retrieval chain provides this
+     const usedContext = contextDocs.map(doc => doc.pageContent).join('\n\n');
+ 
+     // Build the final prompt from actual context + question
+     const finalPrompt = `
+       Answer the user's question as clearly as possible based only on the following context:
+       ---------------------
+       ${usedContext}
+       ---------------------
+       Question: ${question}
+     `.trim();
+
+    
+    const encodedTokens = encode(question);
+    const inputTokens = encodedTokens.length
+    const answer = encode(response.answer)
+    const outputTokens = answer.length;
+    const totalTokens = inputTokens + outputTokens;
+    
+    const cost = calculateGoogleCost(totalTokens);
+
+    await logAnalytics({
+      type: "qa",
+      question,
+      response: response.answer,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      cost,
+      context: usedContext,
+      prompt: finalPrompt,
+    });
+
+    res.json({ success: true, answer:response.answer , inputTokens, outputTokens, totalTokens, cost});
   } catch (error) {
     console.error("Error in query:", error);
     res.status(500).json({ success: false, error: error.message });
