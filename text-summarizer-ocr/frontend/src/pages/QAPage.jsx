@@ -16,8 +16,10 @@ const QAPage = () => {
       if (res.data.answer) {
         setAnswer(res.data.answer);
         toast.success('Answer received');
+      } else if(!res.data.success){
+        toast.error(res.data.message);
       } else {
-        toast.warn('No answer returned');
+        toast.error('No answer returned');
       }
     } catch (err) {
       console.error(err);

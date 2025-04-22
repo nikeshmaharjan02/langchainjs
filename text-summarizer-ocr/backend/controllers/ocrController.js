@@ -89,11 +89,22 @@ export const imageOCRController = async (req,res)=>{
     }
 }
 
-export const queryOCRController = async (req,res)=>{
+const TOKEN_LIMIT = 1000;
+
+export const queryOCRController = async (req,res)=>{ 
   try {
     const { question } = req.body;
     if (!question) {
       return res.json({ success: false, answer: 'Please provide a question' });
+    }
+
+    const encodedTokens = encode(question);
+    const inputTokens = encodedTokens.length
+    if (inputTokens > 200) {
+      return res.json({ 
+        success: false, 
+        message: `❌ Input is too long. Token count: ${inputTokens}, limit is 200` 
+      });
     }
     const retriever = vectorStore.asRetriever();
 
@@ -138,11 +149,18 @@ export const queryOCRController = async (req,res)=>{
      `.trim();
 
     
-    const encodedTokens = encode(question);
-    const inputTokens = encodedTokens.length
+    
     const answer = encode(response.answer)
     const outputTokens = answer.length;
     const totalTokens = inputTokens + outputTokens;
+
+    // Check again if total tokens exceed the limit
+    if (totalTokens > TOKEN_LIMIT) {
+      return res.json({ 
+        success: false, 
+        message: `❌ Combined token usage exceeds limit: ${totalTokens}/${TOKEN_LIMIT}` 
+      });
+    }
     
     const cost = calculateGoogleCost(totalTokens);
 
